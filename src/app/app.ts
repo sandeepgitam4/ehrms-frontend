@@ -9,4 +9,7 @@ import { ToastComponent } from './components/toast.component';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class AppComponent {}
+export class AppComponent {
+  currentYear = new Date().getFullYear();
+  githubId = 'YOUR_GITHUB_ID';
+}

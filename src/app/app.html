@@ -15,5 +15,17 @@
   <main>
     <router-outlet></router-outlet>
   </main>
+  <footer class="footer">
+    <div class="footer-content">
+      <span>© {{ currentYear }} Sandeep</span>
+      <span class="footer-dot">•</span>
+      <a
+        class="footer-link"
+        href="https://github.com/{{ githubId }}"
+        target="_blank"
+        rel="noopener"
+      >GitHub: @{{ githubId }}</a>
+    </div>
+  </footer>
   <app-toast></app-toast>
 </div>
