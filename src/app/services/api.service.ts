@@ -7,7 +7,7 @@ import { Employee, Attendance } from '../models/employee.model';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:8000';
+  private apiUrl = 'https://ehrms-backend.vercel.app';
 
   constructor(private http: HttpClient) {}
 
