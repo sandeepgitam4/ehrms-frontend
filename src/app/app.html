@@ -1,0 +1,19 @@
+<div class="app">
+  <header>
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">🏢</span>
+        <h1>HRMS Lite</h1>
+      </div>
+      <nav>
+        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a routerLink="/employees" routerLinkActive="active">Employees</a>
+        <a routerLink="/attendance" routerLinkActive="active">Attendance</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+  <app-toast></app-toast>
+</div>
