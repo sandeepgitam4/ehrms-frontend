@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { ToastService } from '../services/toast.service';
 import { Employee, Attendance } from '../models/employee.model';
@@ -17,34 +17,55 @@ import { Employee, Attendance } from '../models/employee.model';
 
       <div class="form-section">
         <h3>📝 Mark Attendance</h3>
-        <form (ngSubmit)="markAttendance()" class="attendance-form">
+        <form (ngSubmit)="markAttendance(attendanceForm)" #attendanceForm="ngForm" class="attendance-form" novalidate>
           <div class="form-row">
             <div class="form-group">
               <label>Employee *</label>
-              <select [(ngModel)]="attendance.employee_id" name="employee_id" required>
+              <select [(ngModel)]="attendance.employee_id" name="employee_id" required #employeeId="ngModel">
                 <option value="">Select Employee</option>
                 <option *ngFor="let emp of employees" [value]="emp.employee_id">
                   {{emp.employee_id}} - {{emp.full_name}}
                 </option>
               </select>
+              <div class="validation-error" *ngIf="employeeId.invalid && (employeeId.touched || attendanceForm.submitted)">
+                <span *ngIf="employeeId.errors?.['required']">Employee is required.</span>
+              </div>
             </div>
 
             <div class="form-group">
               <label>Date *</label>
-              <input type="date" [(ngModel)]="attendance.date" name="date" required>
+              <input
+                type="date"
+                [(ngModel)]="attendance.date"
+                name="date"
+                required
+                [max]="maxDate"
+                #attendanceDate="ngModel"
+              >
+              <div class="validation-error" *ngIf="attendanceDate.invalid && (attendanceDate.touched || attendanceForm.submitted)">
+                <span *ngIf="attendanceDate.errors?.['required']">Date is required.</span>
+                <span *ngIf="attendanceDate.errors?.['max']">Date cannot be in the future.</span>
+              </div>
             </div>
 
             <div class="form-group">
               <label>Status *</label>
-              <select [(ngModel)]="attendance.status" name="status" required>
-                <option value="">Select Status</option>
+              <select [(ngModel)]="attendance.status" name="status" required #status="ngModel">
+                <option value="" disabled>Select Status</option>
                 <option value="Present">Present</option>
                 <option value="Absent">Absent</option>
               </select>
+              <div class="validation-error" *ngIf="status.invalid && (status.touched || attendanceForm.submitted)">
+                <span *ngIf="status.errors?.['required']">Status is required.</span>
+              </div>
             </div>
           </div>
 
-          <button type="submit" class="btn-primary">Mark Attendance</button>
+          <div *ngIf="formError" class="form-error">{{formError}}</div>
+
+          <button type="submit" class="btn-primary" [disabled]="attendanceForm.invalid || submitting">
+            {{submitting ? 'Saving...' : 'Mark Attendance'}}
+          </button>
         </form>
       </div>
 
@@ -99,6 +120,9 @@ import { Employee, Attendance } from '../models/employee.model';
     label { margin-bottom: 8px; font-weight: 600; color: #495057; font-size: 14px; }
     input, select { padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 15px; transition: all 0.3s; }
     input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: #dc3545; }
+    .validation-error { color: #dc3545; font-size: 12px; margin-top: 6px; }
+    .form-error { color: #dc3545; margin: 10px 0 0; font-size: 13px; }
     
     .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 32px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.2s; }
     .btn-primary:hover { transform: scale(1.05); }
@@ -142,9 +166,12 @@ export class AttendanceComponent implements OnInit {
   attendanceList: Attendance[] = [];
   attendance: Attendance = {
     employee_id: '',
-    date: new Date().toISOString().split('T')[0],
+    date: '',
     status: ''
   };
+  maxDate = new Date().toISOString().split('T')[0];
+  submitting = false;
+  formError = '';
 
   constructor(private apiService: ApiService, private toastService: ToastService) {}
 
@@ -167,18 +194,33 @@ export class AttendanceComponent implements OnInit {
     });
   }
 
-  markAttendance() {
+  markAttendance(form: NgForm) {
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      this.formError = 'Please fix the validation errors before saving.';
+      return;
+    }
+    if (!this.attendance.status || !this.attendance.status.trim()) {
+      this.formError = 'Status is required.';
+      return;
+    }
+    this.submitting = true;
+    this.formError = '';
     this.apiService.markAttendance(this.attendance).subscribe({
       next: () => {
         this.toastService.success('Attendance marked successfully!');
         this.attendance = {
           employee_id: '',
-          date: new Date().toISOString().split('T')[0],
+          date: '',
           status: ''
         };
         this.loadAttendance();
+        this.submitting = false;
       },
-      error: () => this.toastService.error('Failed to mark attendance')
+      error: () => {
+        this.toastService.error('Failed to mark attendance');
+        this.submitting = false;
+      }
     });
   }
 }

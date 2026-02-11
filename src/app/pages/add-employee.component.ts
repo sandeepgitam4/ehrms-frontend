@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { ToastService } from '../services/toast.service';
@@ -17,23 +17,52 @@ import { Employee } from '../models/employee.model';
       </div>
       
       <div class="form-card">
-        <form (ngSubmit)="onSubmit()" #empForm="ngForm">
+        <form (ngSubmit)="onSubmit(empForm)" #empForm="ngForm" novalidate>
           <div class="form-row">
             <div class="form-group">
               <label>Full Name *</label>
-              <input type="text" [(ngModel)]="employee.full_name" name="full_name" required placeholder="Enter full name">
+              <input
+                type="text"
+                [(ngModel)]="employee.full_name"
+                name="full_name"
+                required
+                minlength="2"
+                maxlength="50"
+                pattern="^[a-zA-Z][a-zA-Z\\s.'-]{1,49}$"
+                placeholder="Enter full name"
+                #fullName="ngModel"
+              >
+              <div class="validation-error" *ngIf="fullName.invalid && (fullName.touched || empForm.submitted)">
+                <span *ngIf="fullName.errors?.['required']">Full name is required.</span>
+                <span *ngIf="fullName.errors?.['minlength']">Full name must be at least 2 characters.</span>
+                <span *ngIf="fullName.errors?.['maxlength']">Full name must be 50 characters or fewer.</span>
+                <span *ngIf="fullName.errors?.['pattern']">Use letters and common name characters only.</span>
+              </div>
             </div>
 
             <div class="form-group">
               <label>Email *</label>
-              <input type="email" [(ngModel)]="employee.email" name="email" required placeholder="Enter email address">
+              <input
+                type="email"
+                [(ngModel)]="employee.email"
+                name="email"
+                required
+                maxlength="254"
+                placeholder="Enter email address"
+                #email="ngModel"
+              >
+              <div class="validation-error" *ngIf="email.invalid && (email.touched || empForm.submitted)">
+                <span *ngIf="email.errors?.['required']">Email is required.</span>
+                <span *ngIf="email.errors?.['email']">Enter a valid email address.</span>
+                <span *ngIf="email.errors?.['maxlength']">Email is too long.</span>
+              </div>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Department *</label>
-              <select [(ngModel)]="employee.department" name="department" required>
+              <select [(ngModel)]="employee.department" name="department" required #department="ngModel">
                 <option value="">Select Department</option>
                 <option value="IT">IT</option>
                 <option value="HR">HR</option>
@@ -42,6 +71,9 @@ import { Employee } from '../models/employee.model';
                 <option value="Sales">Sales</option>
                 <option value="Marketing">Marketing</option>
               </select>
+              <div class="validation-error" *ngIf="department.invalid && (department.touched || empForm.submitted)">
+                <span *ngIf="department.errors?.['required']">Department is required.</span>
+              </div>
             </div>
           </div>
 
@@ -69,6 +101,8 @@ import { Employee } from '../models/employee.model';
     input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
     select { padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 15px; transition: all 0.3s; background: white; cursor: pointer; }
     select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: #dc3545; }
+    .validation-error { color: #dc3545; font-size: 12px; margin-top: 6px; }
     
     .actions { display: flex; gap: 15px; margin-top: 30px; }
     .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: transform 0.2s; }
@@ -101,10 +135,20 @@ export class AddEmployeeComponent {
 
   constructor(private apiService: ApiService, private router: Router, private toastService: ToastService) {}
 
-  onSubmit() {
+  onSubmit(form: NgForm) {
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      this.error = 'Please fix the validation errors before saving.';
+      return;
+    }
     this.loading = true;
     this.error = '';
-    this.apiService.createEmployee(this.employee).subscribe({
+    const payload: Employee = {
+      ...this.employee,
+      full_name: this.employee.full_name.trim(),
+      email: this.employee.email.trim()
+    };
+    this.apiService.createEmployee(payload).subscribe({
       next: () => {
         this.toastService.success('Employee created successfully!');
         this.router.navigate(['/employees']);

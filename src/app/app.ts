@@ -11,5 +11,5 @@ import { ToastComponent } from './components/toast.component';
 })
 export class AppComponent {
   currentYear = new Date().getFullYear();
-  githubId = '@sandeepgitam4';
+  githubId = 'sandeepgitam4';
 }
